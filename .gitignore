@@ -110,3 +110,4 @@ UpgradeLog*.htm
 *.DS_Store
 *.swp
 *~.*
+*.userprefs

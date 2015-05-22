@@ -7,7 +7,7 @@ using Akka.Actor;
 
 namespace ChartApp.Actors
 {
-    public class ChartingActor : ReceiveActor
+    public class ChartingActor : ReceiveActor, IWithUnboundedStash
     {
         /// <summary>
         /// Maximum number of points we will allow in a series
@@ -100,11 +100,17 @@ namespace ChartApp.Actors
 
         private void Paused()
         {
+            // while paused, we need to stash AddSeries & RemoveSeries messages
+            Receive<AddSeries>(addSeries => Stash.Stash());
+            Receive<RemoveSeries>(addSeries => Stash.Stash());
             Receive<Metric>(metric => HandleMetricsPaused(metric));
             Receive<TogglePause>(pause =>
             {
                 SetPauseButtonText(false);
                 UnbecomeStacked();
+                // ChartingActor is leaving the paused state, put messages back into mailbox for processing
+                // under new behavior
+                Stash.UnstashAll();
             });
         }
 
@@ -206,5 +212,7 @@ namespace ChartApp.Actors
                 area.AxisY.Maximum = maxAxisY;
             }
         }
+
+        public IStash Stash { get; set; }
     }
 }
